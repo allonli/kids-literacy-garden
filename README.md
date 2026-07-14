@@ -42,6 +42,15 @@ npm run build
 - `npm run test:unit`：验证去重导入、取字、穿插认读、升级退回、设置边界和全部字的组词覆盖。
 - `npm test`：在单元测试后执行生产构建，并检查服务端渲染页面与 iPad 基础适配约束。
 
+## 免费托管
+
+推送到 GitHub 仓库的 `main` 分支后，GitHub Actions 会自动测试、生成纯静态站点并发布到 GitHub Pages。本地验证静态构建：
+
+```powershell
+$env:GITHUB_PAGES="true"
+npm run build:pages
+```
+
 ## 内容来源
 
 组词与拼音使用 `cnchar` 和 `cnchar-words`，并通过儿童友好覆盖表修正常见、缺失或容易歧义的词语。家长在网站内的修改优先于自动推荐。

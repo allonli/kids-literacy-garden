@@ -8,10 +8,11 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:pages": "next build",
     "start": "vinext start",
     "test:unit": "node --test tests/learning-engine.test.mjs tests/word-recommendation.test.mjs",
     "test": "npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern out --ignore-pattern output",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

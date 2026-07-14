@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { addNewCharacters, setCustomWords, updateSettings } from "@/lib/learning-engine.mjs";
 import { getSuggestedWords } from "@/lib/word-recommendation.mjs";
-import type { LiteracyState } from "@/lib/types";
+import type { LiteracySettings, LiteracyState } from "@/lib/types";
 
 type Props = {
   state: LiteracyState;
@@ -31,7 +31,7 @@ export function ParentPanel({ state, onChange, onReset, onClose }: Props) {
     ...getSuggestedWords(selected.char, learnedSet),
   ].filter((word, index, all) => !selected.hiddenWords?.includes(word) && all.indexOf(word) === index).slice(0, 5) : [];
 
-  function changeSetting(key: string, delta: number, minimum: number, maximum: number) {
+  function changeSetting(key: keyof LiteracySettings, delta: number, minimum: number, maximum: number) {
     const value = Math.min(maximum, Math.max(minimum, state.settings[key] + delta));
     onChange(updateSettings(state, { [key]: value }));
   }
