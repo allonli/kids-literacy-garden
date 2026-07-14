@@ -156,6 +156,24 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .editable-word { display: inline-flex; align-items: center; gap: 7px; padding: 8px 8px 8px 12px; border-radius: 999px; background: var(--blue-soft); }
 .editable-word button { min-height: 34px; border: 0; background: white; border-radius: 999px; color: var(--coral); }
 
+.status-board { grid-column: 1 / -1; }
+.status-board-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.status-board-heading > strong { white-space: nowrap; color: var(--blue-dark); background: var(--blue-soft); border-radius: 999px; padding: 8px 12px; }
+.status-search { display: grid; gap: 8px; margin: 18px 0 14px; }
+.status-search label { font-weight: 800; }
+.status-search input { width: 100%; min-height: 52px; border: 1px solid var(--line); border-radius: 14px; background: white; padding: 10px 13px; }
+.status-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.status-filter { min-height: 44px; border: 1px solid var(--line); border-radius: 999px; background: white; color: var(--ink); padding: 8px 12px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.status-filter strong { color: var(--blue-dark); }
+.status-filter[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); color: var(--blue-dark); }
+.status-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.status-card { min-width: 0; display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 16px; background: white; padding: 12px; }
+.status-character { flex: 0 0 48px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: var(--blue-soft); color: var(--blue-dark); font-family: "Kaiti SC", "STKaiti", "Microsoft YaHei", serif; font-size: 29px; font-weight: 800; }
+.status-card-copy { min-width: 0; display: grid; gap: 3px; }
+.status-card-copy span, .status-card-copy small { color: var(--muted); overflow-wrap: anywhere; }
+.status-card-copy small { font-size: 12px; }
+.status-empty { border: 1px dashed var(--line); border-radius: 16px; padding: 28px 16px; text-align: center; color: var(--muted); }
+
 .empty-state { text-align: center; padding: 42px 16px; }
 .empty-state .empty-icon { font-size: 54px; }
 .empty-state h2 { margin: 10px 0; }

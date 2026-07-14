@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CharacterStatusBoard } from "./CharacterStatusBoard";
 import { addNewCharacters, setCustomWords, updateSettings } from "@/lib/learning-engine.mjs";
 import { getSuggestedWords } from "@/lib/word-recommendation.mjs";
 import type { LiteracySettings, LiteracyState } from "@/lib/types";
@@ -89,6 +90,8 @@ export function ParentPanel({ state, onChange, onReset, onClose }: Props) {
           </div>
           <div className="warning-note">已导入 {state.items.length} 个不同汉字；原表有 {state.importWarnings.length} 条重复或无效内容，系统已自动处理。</div>
         </section>
+
+        <CharacterStatusBoard items={state.items} settings={state.settings} />
 
         <section className="subpanel">
           <h2>维护组词</h2>

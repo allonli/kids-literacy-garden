@@ -41,3 +41,16 @@ test("keeps iPad accessibility and removes the starter preview", async () => {
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
+
+test("provides a searchable stage-based character status board", async () => {
+  const [board, parentPanel] = await Promise.all([
+    readFile(new URL("../components/CharacterStatusBoard.tsx", import.meta.url), "utf8").catch(() => ""),
+    readFile(new URL("../components/ParentPanel.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(board, /全部汉字学习情况/);
+  assert.match(board, /aria-label="搜索汉字"/);
+  assert.match(board, /STATUS_STAGES/);
+  assert.match(board, /filterStatusItems/);
+  assert.match(board, /没有找到这个字/);
+  assert.match(parentPanel, /<CharacterStatusBoard items=\{state\.items\} settings=\{state\.settings\} \/>/);
+});
