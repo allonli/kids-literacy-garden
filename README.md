@@ -1,98 +1,47 @@
-# vinext-starter
+# 识字小花园
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+面向六岁儿童与陪学家长的单设备识字网站。孩子先在常见组词中学习目标字，再进行无提示单字认读；系统自动管理待复习、每周、每两周和已掌握阶段。
 
-## Prerequisites
+## 已实现
 
-- Node.js `>=22.13.0`
+- 导入《1识字更新总表.docx》的 649 个不同汉字，自动处理重复、跨阶段冲突和非汉字 `x`。
+- 家长陪学与孩子自主学习两种模式。
+- 新字和不熟悉字先学组词，再穿插进行单字认读。
+- 每轮取字数、每字认读遍数、各阶段升级次数均可由家长设置。
+- 每个导入汉字都有组词内容；优先使用已学字搭配，家长可新增或隐藏组词。
+- 支持浏览器中文语音播放，语音不可用时不影响学习。
+- iPad 横竖屏与电脑浏览器自适应，主要按钮适合触控。
 
-## Quick Start
+## 数据保存
+
+首版不需要账号。学习记录保存在当前浏览器的 `localStorage` 中，键名为 `kids-literacy:v1`。
+
+- 同一台 iPad 的同一浏览器再次打开会继续上次进度。
+- 清理浏览器网站数据会清空进度。
+- 不同设备之间不会自动同步。
+- 家长中心提供“清空并重新开始”，恢复到首次导入状态。
+
+## 本地运行
+
+需要 Node.js 22.13 或更高版本。
 
 ```bash
-npm install
+npm ci
 npm run dev
+```
+
+## 验证
+
+```bash
+npm run test:unit
+npm test
+npm run lint
 npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+- `npm run test:unit`：验证去重导入、取字、穿插认读、升级退回、设置边界和全部字的组词覆盖。
+- `npm test`：在单元测试后执行生产构建，并检查服务端渲染页面与 iPad 基础适配约束。
 
-## Included Shape
+## 内容来源
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
-```
-
-## Optional Dispatch-Owned ChatGPT Sign-In
-
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+组词与拼音使用 `cnchar` 和 `cnchar-words`，并通过儿童友好覆盖表修正常见、缺失或容易歧义的词语。家长在网站内的修改优先于自动推荐。

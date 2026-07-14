@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  addNewCharacters,
   buildLearningQueue,
   createInitialState,
   getDueItems,
@@ -9,6 +10,9 @@ import {
   recordLearningAnswer,
   recordReviewAnswer,
   selectLearningBatch,
+  selectReviewBatch,
+  setCustomWords,
+  updateSettings,
 } from "../lib/learning-engine.mjs";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -90,4 +94,34 @@ test("due items exclude future reviews and include configured mastered sampling"
   state.settings.masteredSample = 1;
 
   assert.deepEqual(getDueItems(state, now).map((item) => item.char), ["今", "会"]);
+});
+
+test("review sessions honor the configured batch size", () => {
+  const state = createInitialState([
+    { char: "今", stage: "DAILY" },
+    { char: "明", stage: "DAILY" },
+    { char: "天", stage: "DAILY" },
+  ], now);
+  state.settings.batchSize = 2;
+  assert.deepEqual(selectReviewBatch(state, now).map((item) => item.char), ["今", "明"]);
+});
+
+test("parent settings are clamped and newly added characters enter learning once", () => {
+  let state = createInitialState([{ char: "桥", stage: "DAILY" }], now);
+  state = updateSettings(state, { batchSize: 99, learningRepetitions: 0, masteredSample: 4 });
+  assert.equal(state.settings.batchSize, 20);
+  assert.equal(state.settings.learningRepetitions, 1);
+  assert.equal(state.settings.masteredSample, 4);
+
+  state = addNewCharacters(state, "新桥x词");
+  assert.deepEqual(state.items.slice(-2).map(({ char, stage }) => ({ char, stage })), [
+    { char: "新", stage: "LEARNING" },
+    { char: "词", stage: "LEARNING" },
+  ]);
+});
+
+test("parent custom words keep only unique short phrases containing the target character", () => {
+  let state = createInitialState([{ char: "桥", stage: "LEARNING" }], now);
+  state = setCustomWords(state, "桥", ["木桥", "木桥", "天桥", "大路", "这是一座很长的桥"]);
+  assert.deepEqual(state.items[0].customWords, ["木桥", "天桥"]);
 });
