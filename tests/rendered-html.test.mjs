@@ -54,3 +54,10 @@ test("provides a searchable stage-based character status board", async () => {
   assert.match(board, /没有找到这个字/);
   assert.match(parentPanel, /<CharacterStatusBoard items=\{state\.items\} settings=\{state\.settings\} \/>/);
 });
+
+test("review feedback advances automatically without a manual next button", async () => {
+  const literacyApp = await readFile(new URL("../components/LiteracyApp.tsx", import.meta.url), "utf8");
+  assert.match(literacyApp, /getReviewFeedbackDelay/);
+  assert.match(literacyApp, /getNextReviewStep/);
+  assert.doesNotMatch(literacyApp, /onClick=\{continueReview\}>下一个/);
+});

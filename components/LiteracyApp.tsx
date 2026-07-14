@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ParentPanel } from "./ParentPanel";
 import { RecognitionCard } from "./RecognitionCard";
 import { WordStudyCard } from "./WordStudyCard";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/learning-engine.mjs";
 import { loadState, resetState, saveState } from "@/lib/storage.mjs";
 import { getPinyin, getSuggestedWords } from "@/lib/word-recommendation.mjs";
+import { getNextReviewStep, getReviewFeedbackDelay } from "@/lib/review-flow.mjs";
 import type { LiteracyItem, LiteracyState } from "@/lib/types";
 
 type View = "home" | "preview" | "study" | "recognition" | "review" | "summary" | "parent";
@@ -37,7 +38,8 @@ export function LiteracyApp() {
   const [reviewIds, setReviewIds] = useState<string[]>([]);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [feedback, setFeedback] = useState<{ correct: boolean; char: string } | null>(null);
-  const [undoState, setUndoState] = useState<LiteracyState | null>(null);
+  const [undoState, setUndoState] = useState<{ state: LiteracyState; reviewIndex: number } | null>(null);
+  const reviewTimerRef = useRef<number | null>(null);
   const [summary, setSummary] = useState({ title: "今天完成啦", detail: "每一次认真读，都让记忆更牢。" });
 
   useEffect(() => {
@@ -50,6 +52,10 @@ export function LiteracyApp() {
   }, []);
 
   useEffect(() => { if (hydrated) saveState(state); }, [state, hydrated]);
+
+  useEffect(() => () => {
+    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
+  }, []);
 
   const learnedSet = useMemo(() => new Set<string>(state.items.map((item) => item.char)), [state.items]);
   const learningItems = state.items.filter((item) => item.stage === "LEARNING");
@@ -105,7 +111,6 @@ export function LiteracyApp() {
     const id = learningQueue[queueIndex];
     const current = state.items.find((item) => item.id === id);
     if (!current) return;
-    setUndoState(state);
     setState(recordLearningAnswer(state, id, correct, new Date()));
     const nextQueue = correct ? learningQueue : [...learningQueue, id];
     if (!correct) setLearningQueue(nextQueue);
@@ -120,6 +125,7 @@ export function LiteracyApp() {
   }
 
   function beginReview(selectedMode = mode) {
+    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
     setMode(selectedMode);
     const ids = (selectReviewBatch(state, new Date()) as LiteracyItem[]).map((item) => item.id);
     if (ids.length === 0) {
@@ -130,29 +136,38 @@ export function LiteracyApp() {
     setReviewIds(ids);
     setReviewIndex(0);
     setFeedback(null);
+    setUndoState(null);
     setView("review");
   }
 
   function answerReview(correct: boolean) {
     const id = reviewIds[reviewIndex];
     const item = state.items.find((candidate) => candidate.id === id);
-    if (!item) return;
-    setUndoState(state);
+    if (!item || feedback) return;
+    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
+    const answeredIndex = reviewIndex;
+    setUndoState({ state, reviewIndex: answeredIndex });
     setState(recordReviewAnswer(state, id, correct, new Date()));
     setFeedback({ correct, char: item.char });
-  }
-
-  function continueReview() {
-    setFeedback(null);
-    if (reviewIndex + 1 >= reviewIds.length) {
-      setSummary({ title: "今天复习完成", detail: `完成了 ${reviewIds.length} 个字，系统已经安排好下次复习。` });
-      setView("summary");
-    } else setReviewIndex((value) => value + 1);
+    reviewTimerRef.current = window.setTimeout(() => {
+      const next = getNextReviewStep(answeredIndex, reviewIds.length);
+      setFeedback(null);
+      if (next.done) {
+        setSummary({ title: "今天复习完成", detail: `完成了 ${reviewIds.length} 个字，系统已经安排好下次复习。` });
+        setView("summary");
+      } else {
+        setReviewIndex(next.nextIndex);
+      }
+      reviewTimerRef.current = null;
+    }, getReviewFeedbackDelay(correct));
   }
 
   function undo() {
     if (!undoState) return;
-    setState(undoState);
+    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
+    reviewTimerRef.current = null;
+    setState(undoState.state);
+    setReviewIndex(undoState.reviewIndex);
     setUndoState(null);
     setFeedback(null);
   }
@@ -202,7 +217,7 @@ export function LiteracyApp() {
 
       {view === "recognition" && currentLearning && <main className="main-stage"><div className="progress-track"><div className="progress-fill" style={{ width: `${(queueIndex / Math.max(1, learningQueue.length)) * 100}%` }} /></div><RecognitionCard char={currentLearning.char} correctCount={currentLearning.learningCorrect} targetCount={sessionSettings.learningRepetitions} parentMode={mode === "parent"} disabled={Boolean(feedback)} onAnswer={answerLearning} />{feedback && <div className={`feedback ${feedback.correct ? "good" : "again"}`}><strong>{feedback.correct ? "读对了！" : "再看一次"}</strong>{feedback.correct ? "稍后还会再见到它。" : `${feedback.char} · ${getPinyin(feedback.char)} · ${wordsFor(currentLearning).join("、")}`}</div>}</main>}
 
-      {view === "review" && currentReview && <main className="main-stage"><div className="section-head"><div><p className="eyebrow">到期复习 · {reviewIndex + 1}/{reviewIds.length}</p><h1>先读，再判断</h1></div>{undoState && <button className="btn btn-ghost btn-small" onClick={undo}>撤销上一步</button>}</div><RecognitionCard char={currentReview.char} correctCount={currentReview.stageStreak} targetCount={currentReview.stage === "MASTERED" ? 1 : state.settings[`${currentReview.stage === "DAILY" ? "daily" : currentReview.stage === "WEEKLY" ? "weekly" : "biweekly"}Goal`] ?? 3} parentMode={mode === "parent"} disabled={Boolean(feedback)} onAnswer={answerReview} />{feedback && <div className={`feedback ${feedback.correct ? "good" : "again"}`}><strong>{feedback.correct ? "答对了" : "先回去学一学"}</strong><div>{getPinyin(currentReview.char)} · {wordsFor(currentReview).join("、")}</div><button className="btn btn-secondary btn-small" style={{ marginTop: 12 }} onClick={() => speak(`${currentReview.char}，${wordsFor(currentReview).join("，")}`)}>🔊 播放答案</button><button className="btn btn-primary btn-small" style={{ marginTop: 12, marginLeft: 8 }} onClick={continueReview}>下一个</button></div>}</main>}
+      {view === "review" && currentReview && <main className="main-stage"><div className="section-head"><div><p className="eyebrow">到期复习 · {reviewIndex + 1}/{reviewIds.length}</p><h1>先读，再判断</h1></div>{undoState && <button className="btn btn-ghost btn-small" onClick={undo}>撤销上一步</button>}</div><RecognitionCard char={currentReview.char} correctCount={currentReview.stageStreak} targetCount={currentReview.stage === "MASTERED" ? 1 : state.settings[`${currentReview.stage === "DAILY" ? "daily" : currentReview.stage === "WEEKLY" ? "weekly" : "biweekly"}Goal`] ?? 3} parentMode={mode === "parent"} disabled={Boolean(feedback)} onAnswer={answerReview} />{feedback && <div className={`feedback ${feedback.correct ? "good" : "again"}`}><strong>{feedback.correct ? "答对了" : "先回去学一学"}</strong><div>{getPinyin(currentReview.char)} · {wordsFor(currentReview).join("、")}</div><button className="btn btn-secondary btn-small" style={{ marginTop: 12 }} onClick={() => speak(`${currentReview.char}，${wordsFor(currentReview).join("，")}`)}>🔊 播放答案</button></div>}</main>}
 
       {view === "summary" && <main className="main-stage"><section className="panel empty-state"><div className="empty-icon">🌼</div><h2>{summary.title}</h2><p>{summary.detail}</p><div className="button-row two" style={{ marginTop: 24 }}><button className="btn btn-secondary" onClick={() => setView("home")}>回到首页</button><button className="btn btn-primary" onClick={() => begin(mode)}>继续下一轮</button></div></section></main>}
 
