@@ -51,6 +51,13 @@ $env:GITHUB_PAGES="true"
 npm run build:pages
 ```
 
+Vercel 使用标准 Next.js 构建：
+
+```powershell
+npm run build:vercel
+vercel --prod
+```
+
 ## 内容来源
 
 组词与拼音使用 `cnchar` 和 `cnchar-words`，并通过儿童友好覆盖表修正常见、缺失或容易歧义的词语。家长在网站内的修改优先于自动推荐。
