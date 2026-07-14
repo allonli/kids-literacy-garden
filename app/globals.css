@@ -124,6 +124,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .word-pill { background: var(--blue-soft); color: var(--blue-dark); border-radius: 999px; padding: 12px 18px; font-size: clamp(20px, 4vw, 27px); font-weight: 700; }
 .word-pill mark { background: transparent; color: var(--coral); }
 .study-tip { color: var(--muted); line-height: 1.7; margin: 18px auto; }
+.study-action-bar {
+  position: sticky; bottom: 0; z-index: 2;
+  display: grid; gap: 10px; margin: 24px -8px -8px; padding: 14px 8px calc(8px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, rgba(255, 253, 247, 0.86), var(--card) 24%);
+}
 .recognition-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 620px; margin: 26px auto 0; }
 .counter-badge { display: inline-flex; border-radius: 999px; padding: 8px 14px; background: #f3f5f8; color: var(--muted); font-weight: 700; }
 
@@ -183,6 +188,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .app-shell { padding-left: 30px; padding-right: 30px; }
   .mode-grid { grid-template-columns: 1fr 1fr; }
   .button-row.two { grid-template-columns: 1fr 1fr; }
+  .study-action-bar { grid-template-columns: minmax(150px, 0.7fr) minmax(260px, 1.3fr); }
   .parent-layout { grid-template-columns: 1fr 1fr; align-items: start; }
   .inline-form { grid-template-columns: 1fr auto; }
   .panel { padding: 30px; }

@@ -61,3 +61,14 @@ test("review feedback advances automatically without a manual next button", asyn
   assert.match(literacyApp, /getNextReviewStep/);
   assert.doesNotMatch(literacyApp, /onClick=\{continueReview\}>下一个/);
 });
+
+test("keeps the new-learning next action reachable above the safe area", async () => {
+  const [wordStudyCard, css] = await Promise.all([
+    readFile(new URL("../components/WordStudyCard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(wordStudyCard, /className="study-action-bar"/);
+  assert.match(css, /\.study-action-bar\s*\{[^}]*position:\s*sticky/s);
+  assert.match(css, /\.study-action-bar\s*\{[^}]*bottom:/s);
+  assert.match(css, /\.study-action-bar\s*\{[^}]*env\(safe-area-inset-bottom\)/s);
+});

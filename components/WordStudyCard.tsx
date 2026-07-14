@@ -25,7 +25,7 @@ export function WordStudyCard({ item, pinyin, words, position, total, onSpeak, o
         {words.map((word) => <span className="word-pill" key={word}><HighlightedWord word={word} target={item.char} /></span>)}
       </div>
       <p className="study-tip">请把这个字和词语一起读一遍，再进入单字认读。</p>
-      <div className="button-row two">
+      <div className="study-action-bar">
         <button className="btn btn-secondary" type="button" onClick={() => onSpeak(`${item.char}，${words.join("，")}`)}>🔊 播放读音</button>
         <button className="btn btn-primary" type="button" onClick={onNext}>我学好了，下一个</button>
       </div>
