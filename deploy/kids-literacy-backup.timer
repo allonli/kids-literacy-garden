@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Kids Literacy progress backup
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+Unit=kids-literacy-backup.service
+
+[Install]
+WantedBy=timers.target

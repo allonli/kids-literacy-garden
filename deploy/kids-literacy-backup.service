@@ -1,0 +1,14 @@
+[Unit]
+Description=Back up Kids Literacy progress database
+After=kids-literacy-garden.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/kids-literacy-garden
+EnvironmentFile=/etc/kids-literacy-garden.env
+ExecStart=/usr/bin/node /opt/kids-literacy-garden/scripts/backup-progress.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/kids-literacy /var/backups/kids-literacy

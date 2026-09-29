@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.0"
   },
   "scripts": {
-    "dev": "vinext dev",
-    "build": "vinext build",
-    "build:pages": "next build",
+    "dev": "next dev",
+    "build": "next build",
     "build:vercel": "next build",
-    "start": "vinext start",
-    "test:unit": "node --test tests/learning-engine.test.mjs tests/word-recommendation.test.mjs tests/character-status.test.mjs tests/review-flow.test.mjs",
-    "test": "npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs",
+    "build:vinext": "vinext build",
+    "start": "next start",
+    "test:unit": "node --test tests/learning-engine.test.mjs tests/word-recommendation.test.mjs tests/character-status.test.mjs tests/review-flow.test.mjs tests/session-flow.test.mjs tests/progress-state.test.mjs tests/progress-sync.test.mjs tests/progress-db.test.mjs tests/family-auth.test.mjs tests/login-rate-limit.test.mjs tests/request-security.test.mjs tests/progress-api.test.mjs tests/progress-client.test.mjs tests/backup-progress.test.mjs tests/character-editing.test.mjs tests/study-list.test.mjs tests/accounts-client.test.mjs tests/accounts-db.test.mjs tests/accounts-api.test.mjs",
+    "test": "npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs tests/production-server.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern out --ignore-pattern output",
     "db:generate": "drizzle-kit generate"
   },

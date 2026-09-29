@@ -15,9 +15,14 @@ type StatusStage = "ALL" | LearningStage;
 type Props = {
   items: LiteracyItem[];
   settings: LiteracySettings;
+  onEditCharacter: (id: string) => void;
+  onViewCharacter: (id: string) => void;
+  onToggleWeekend: (id: string) => void;
+  onDeleteCharacter: (id: string) => void;
+  weekendIds: string[];
 };
 
-export function CharacterStatusBoard({ items, settings }: Props) {
+export function CharacterStatusBoard({ items, settings, onEditCharacter, onViewCharacter, onToggleWeekend, onDeleteCharacter, weekendIds }: Props) {
   const [query, setQuery] = useState("");
   const [stage, setStage] = useState<StatusStage>("ALL");
   const counts = useMemo(() => getStageCounts(items), [items]);
@@ -64,13 +69,21 @@ export function CharacterStatusBoard({ items, settings }: Props) {
           {visibleItems.map((item: LiteracyItem) => {
             const meta = STATUS_STAGES.find((option) => option.value === item.stage);
             const progress = getStageProgress(item, settings);
+            const inWeekend = weekendIds.includes(item.id);
             return (
-              <article className="status-card" key={item.id}>
-                <div className="status-character">{item.char}</div>
-                <div className="status-card-copy">
-                  <strong>{meta?.label}</strong>
-                  {progress && <span>{progress}</span>}
-                  <small>{getNextReviewLabel(item)}</small>
+              <article className="status-card status-card-with-actions" key={item.id} aria-label={`${item.char}的学习情况`}>
+                <div className="status-card-overview">
+                  <button className="status-character status-character-button" type="button" aria-label={`查看${item.char}的详情`} onClick={() => onViewCharacter(item.id)}>{item.char}</button>
+                  <div className="status-card-copy">
+                    <strong>{meta?.label}</strong>
+                    {progress && <span>{progress}</span>}
+                    <small>{getNextReviewLabel(item)}</small>
+                  </div>
+                </div>
+                <div className="status-card-actions">
+                  <button className="btn btn-ghost btn-small" type="button" aria-label={`编辑${item.char}`} onClick={() => onEditCharacter(item.id)}>编辑</button>
+                  <button className="btn btn-secondary btn-small" type="button" aria-label={`将${item.char}${inWeekend ? "移出" : "加入"}本周末复习`} aria-pressed={inWeekend} onClick={() => onToggleWeekend(item.id)}>{inWeekend ? "移出周末" : "加入周末"}</button>
+                  <button className="btn btn-again btn-small status-card-delete" type="button" aria-label={`删除${item.char}`} onClick={() => onDeleteCharacter(item.id)}>删除</button>
                 </div>
               </article>
             );

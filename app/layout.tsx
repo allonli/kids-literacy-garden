@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./character-tools.css";
+import "./daily-study.css";
+import "./weekend-review.css";
+import "./accounts.css";
 
 export const metadata: Metadata = {
   title: "识字小花园",

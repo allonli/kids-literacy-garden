@@ -33,6 +33,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+.local-e2e*/
 
 # typescript
 next-env.d.ts

@@ -22,6 +22,14 @@ export type LiteracyItem = {
   words: string[];
   customWords: string[];
   hiddenWords: string[];
+  editedWords?: string[];
+};
+
+export type DailySession = {
+  date: string;
+  pendingIds: string[];
+  retryIds: string[];
+  completedIds: string[];
 };
 
 export type LiteracyState = {
@@ -30,4 +38,6 @@ export type LiteracyState = {
   importWarnings: Array<{ type: string; value?: string }>;
   history: Array<{ char: string; correct: boolean; kind: string; at: string }>;
   items: LiteracyItem[];
+  weekendReview?: { weekStart: string; characterIds: string[] };
+  dailySession?: DailySession;
 };

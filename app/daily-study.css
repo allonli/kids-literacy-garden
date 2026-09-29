@@ -1,0 +1,20 @@
+.daily-study-panel { padding: 22px; }
+.daily-progress { font-weight: 800; line-height: 1.8; }
+.daily-help, .daily-notice { color: var(--muted); font-size: 14px; line-height: 1.7; }
+.daily-notice { min-height: 24px; color: var(--green); }
+.daily-character-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+.daily-character-card { min-width: 0; padding: 10px; background: white; border: 1px solid var(--line); border-radius: 18px; }
+.daily-character { display: grid; place-items: center; width: 100%; min-height: 108px; border: 0; border-radius: 14px; background: var(--blue-soft); color: var(--ink); font-size: 60px; cursor: pointer; user-select: none; touch-action: manipulation; }
+.daily-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+.daily-card-actions .btn { padding: 8px 6px; }
+.daily-card-actions .btn:last-child { grid-column: 1 / -1; }
+.daily-retry-section { margin-top: 30px; border-top: 2px dashed var(--line); padding-top: 20px; }
+.daily-retry-section h2 { font-size: 22px; }
+.daily-retry-section > p { color: var(--muted); line-height: 1.7; }
+.daily-retry-section > .btn { margin-top: 20px; width: 100%; }
+.deferred .daily-character { background: var(--coral-soft); }
+@media (max-width: 420px) {
+  .daily-study-panel { padding: 14px; }
+  .daily-character-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .daily-character-card { padding: 7px; }
+}

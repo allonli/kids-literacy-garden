@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ParentPanel } from "./ParentPanel";
 import { RecognitionCard } from "./RecognitionCard";
 import { WordStudyCard } from "./WordStudyCard";
+import { DailyStudyList } from "./DailyStudyList";
+import { WeekendReview } from "./WeekendReview";
+import { CharacterDialog } from "./CharacterDialog";
+import { CharacterEditor } from "./CharacterEditor";
+import { FamilyAccessGate } from "./FamilyAccessGate";
+import { SyncStatus } from "./SyncStatus";
+import { AccountMenu } from "./AccountMenu";
+import { usePermanentProgress } from "./usePermanentProgress";
 import { SEED_CHARACTERS } from "@/data/seed-characters.mjs";
 import {
   buildLearningQueue,
@@ -15,21 +23,43 @@ import {
   selectReviewBatch,
   updateSettings,
 } from "@/lib/learning-engine.mjs";
-import { loadState, resetState, saveState } from "@/lib/storage.mjs";
-import { getPinyin, getSuggestedWords } from "@/lib/word-recommendation.mjs";
-import { getNextReviewStep, getReviewFeedbackDelay } from "@/lib/review-flow.mjs";
+import { getCharacterPinyin, getCharacterWords, updateCharacter } from "@/lib/character-editing.mjs";
+import { getTodayItems, getWeekendItems, resumeDailySession } from "@/lib/study-list.mjs";
+import { getNextReviewStep } from "@/lib/review-flow.mjs";
+import { canNavigateFromCard, getAnswerDestination, getImmediateAnswerStep, getVisibleExampleWords, shouldAutoSpeak } from "@/lib/session-flow.mjs";
+import { createFreshAccountState } from "@/lib/learning-accounts.mjs";
 import type { LiteracyItem, LiteracyState } from "@/lib/types";
 
-type View = "home" | "preview" | "study" | "recognition" | "review" | "summary" | "parent";
-type Mode = "parent" | "child";
+type View = "home" | "preview" | "study" | "recognition" | "restudy" | "review" | "summary" | "parent" | "daily-list" | "weekend";
+type Mode = "parent" | "list";
+type RestudyContext =
+  | { itemId: string; source: "learning"; nextQueue: string[] }
+  | { itemId: string; source: "review"; answeredIndex: number };
 
 function initialState(): LiteracyState { return createInitialState(SEED_CHARACTERS, new Date()) as LiteracyState; }
 
 export function LiteracyApp() {
-  const [state, setState] = useState<LiteracyState>(initialState);
-  const [hydrated, setHydrated] = useState(false);
+  const [accountId, setAccountId] = useState(() => {
+    try {
+      const saved = globalThis.localStorage?.getItem("kids-literacy:active-account:v1");
+      return saved && /^(default|[a-f0-9-]{36})$/.test(saved) ? saved : "default";
+    } catch { return "default"; }
+  });
+
+  function selectAccount(id: string) {
+    try { localStorage.setItem("kids-literacy:active-account:v1", id); } catch { /* 当前页面仍可切换。 */ }
+    setAccountId(id);
+  }
+
+  // 账户切换时重新挂载学习界面，清除旧账户的队列、撤销快照、弹窗和计时器。
+  return <LearningAccount key={accountId} accountId={accountId} onSelectAccount={selectAccount} />;
+}
+
+function LearningAccount({ accountId, onSelectAccount }: { accountId: string; onSelectAccount: (id: string) => void }) {
+  const { state, setState, hydrated, access, sync, login, createFresh, retry, stop } = usePermanentProgress(initialState, accountId);
   const [view, setView] = useState<View>("home");
-  const [mode, setMode] = useState<Mode>("parent");
+  const [mode, setMode] = useState<Mode>("list");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [sessionSettings, setSessionSettings] = useState({ batchSize: 5, learningRepetitions: 3 });
   const [batchIds, setBatchIds] = useState<string[]>([]);
   const [studyIndex, setStudyIndex] = useState(0);
@@ -37,24 +67,16 @@ export function LiteracyApp() {
   const [queueIndex, setQueueIndex] = useState(0);
   const [reviewIds, setReviewIds] = useState<string[]>([]);
   const [reviewIndex, setReviewIndex] = useState(0);
-  const [feedback, setFeedback] = useState<{ correct: boolean; char: string } | null>(null);
   const [undoState, setUndoState] = useState<{ state: LiteracyState; reviewIndex: number } | null>(null);
-  const reviewTimerRef = useRef<number | null>(null);
+  const [restudyContext, setRestudyContext] = useState<RestudyContext | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const speechTokenRef = useRef(0);
+  const isSpeakingRef = useRef(false);
   const [summary, setSummary] = useState({ title: "今天完成啦", detail: "每一次认真读，都让记忆更牢。" });
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const saved = loadState() as LiteracyState | null;
-      if (saved?.version === 1 && Array.isArray(saved.items)) setState(saved);
-      setHydrated(true);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => { if (hydrated) saveState(state); }, [state, hydrated]);
-
   useEffect(() => () => {
-    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
+    speechTokenRef.current += 1;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   }, []);
 
   const learnedSet = useMemo(() => new Set<string>(state.items.map((item) => item.char)), [state.items]);
@@ -63,22 +85,42 @@ export function LiteracyApp() {
   const masteredCount = state.items.filter((item) => item.stage === "MASTERED").length;
 
   function wordsFor(item: LiteracyItem) {
-    return [...(item.customWords ?? []), ...getSuggestedWords(item.char, learnedSet)]
-      .filter((word, index, all) => !item.hiddenWords?.includes(word) && all.indexOf(word) === index)
-      .slice(0, 3);
+    return getVisibleExampleWords(getCharacterWords(item, learnedSet));
   }
 
-  function speak(text: string) {
-    if (!("speechSynthesis" in window)) return;
+  const speak = useCallback((text: string) => {
+    if (!("speechSynthesis" in window)) {
+      isSpeakingRef.current = false;
+      return false;
+    }
+
+    // 每次发音使用独立令牌，旧语音被取消时不能提前解锁新卡片。
+    const token = speechTokenRef.current + 1;
+    speechTokenRef.current = token;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "zh-CN";
     utterance.rate = 0.72;
+    const finish = () => {
+      if (speechTokenRef.current !== token) return;
+      isSpeakingRef.current = false;
+      setIsSpeaking(false);
+    };
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    isSpeakingRef.current = true;
+    setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
-  }
+    return true;
+  }, []);
 
   function begin(selectedMode: Mode) {
     setMode(selectedMode);
+    if (selectedMode === "list") {
+      setState((previous) => ({ ...previous, dailySession: resumeDailySession(previous) }));
+      setView("daily-list");
+      return;
+    }
     setSessionSettings({ batchSize: state.settings.batchSize, learningRepetitions: state.settings.learningRepetitions });
     if (learningItems.length > 0) setView("preview");
     else if (dueItems.length > 0) beginReview(selectedMode);
@@ -103,6 +145,7 @@ export function LiteracyApp() {
   }
 
   function finishStudyCard() {
+    if (!canNavigateFromCard(isSpeakingRef.current)) return;
     if (studyIndex + 1 < batchIds.length) setStudyIndex(studyIndex + 1);
     else setView("recognition");
   }
@@ -113,19 +156,20 @@ export function LiteracyApp() {
     if (!current) return;
     setState(recordLearningAnswer(state, id, correct, new Date()));
     const nextQueue = correct ? learningQueue : [...learningQueue, id];
-    if (!correct) setLearningQueue(nextQueue);
-    setFeedback({ correct, char: current.char });
-    setTimeout(() => {
-      setFeedback(null);
-      if (queueIndex + 1 >= nextQueue.length) {
-        setSummary({ title: "这一轮完成啦", detail: `${batchIds.length} 个字已经完成认读，明天开始进入待复习。` });
-        setView("summary");
-      } else setQueueIndex((value) => value + 1);
-    }, 650);
+    if (getAnswerDestination("learning", correct) === "restudy") {
+      setLearningQueue(nextQueue);
+      setRestudyContext({ itemId: id, source: "learning", nextQueue });
+      setView("restudy");
+      return;
+    }
+    const next = getImmediateAnswerStep(queueIndex, nextQueue.length);
+    if (next.done) {
+      setSummary({ title: "这一轮完成啦", detail: `${batchIds.length} 个字已经完成认读，明天开始进入待复习。` });
+      setView("summary");
+    } else setQueueIndex(next.nextIndex);
   }
 
   function beginReview(selectedMode = mode) {
-    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
     setMode(selectedMode);
     const ids = (selectReviewBatch(state, new Date()) as LiteracyItem[]).map((item) => item.id);
     if (ids.length === 0) {
@@ -135,7 +179,6 @@ export function LiteracyApp() {
     }
     setReviewIds(ids);
     setReviewIndex(0);
-    setFeedback(null);
     setUndoState(null);
     setView("review");
   }
@@ -143,61 +186,99 @@ export function LiteracyApp() {
   function answerReview(correct: boolean) {
     const id = reviewIds[reviewIndex];
     const item = state.items.find((candidate) => candidate.id === id);
-    if (!item || feedback) return;
-    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
+    if (!item) return;
     const answeredIndex = reviewIndex;
     setUndoState({ state, reviewIndex: answeredIndex });
     setState(recordReviewAnswer(state, id, correct, new Date()));
-    setFeedback({ correct, char: item.char });
-    reviewTimerRef.current = window.setTimeout(() => {
-      const next = getNextReviewStep(answeredIndex, reviewIds.length);
-      setFeedback(null);
-      if (next.done) {
-        setSummary({ title: "今天复习完成", detail: `完成了 ${reviewIds.length} 个字，系统已经安排好下次复习。` });
-        setView("summary");
-      } else {
-        setReviewIndex(next.nextIndex);
-      }
-      reviewTimerRef.current = null;
-    }, getReviewFeedbackDelay(correct));
+    if (getAnswerDestination("review", correct) === "restudy") {
+      setRestudyContext({ itemId: id, source: "review", answeredIndex });
+      setView("restudy");
+      return;
+    }
+    continueReview(answeredIndex);
+  }
+
+  function continueReview(answeredIndex: number) {
+    const next = getNextReviewStep(answeredIndex, reviewIds.length);
+    if (next.done) {
+      setSummary({ title: "今天复习完成", detail: `完成了 ${reviewIds.length} 个字，系统已经安排好下次复习。` });
+      setView("summary");
+    } else {
+      setReviewIndex(next.nextIndex);
+      setView("review");
+    }
+  }
+
+  function finishRestudyCard() {
+    if (!restudyContext || !canNavigateFromCard(isSpeakingRef.current)) return;
+    const context = restudyContext;
+    setRestudyContext(null);
+    if (context.source === "review") {
+      continueReview(context.answeredIndex);
+      return;
+    }
+    if (queueIndex + 1 >= context.nextQueue.length) {
+      setSummary({ title: "这一轮完成啦", detail: `${batchIds.length} 个字已经完成认读，明天开始进入待复习。` });
+      setView("summary");
+    } else {
+      setQueueIndex((value) => value + 1);
+      setView("recognition");
+    }
   }
 
   function undo() {
     if (!undoState) return;
-    if (reviewTimerRef.current !== null) window.clearTimeout(reviewTimerRef.current);
-    reviewTimerRef.current = null;
     setState(undoState.state);
     setReviewIndex(undoState.reviewIndex);
     setUndoState(null);
-    setFeedback(null);
   }
 
   function resetAll() {
-    resetState();
-    setState(initialState());
+    setState(accountId === "default" ? initialState() : createFreshAccountState(state));
     setView("home");
+  }
+
+  function switchAccount(id: string) {
+    if (id === accountId) return;
+    stop();
+    onSelectAccount(id);
   }
 
   const currentStudy = state.items.find((item) => item.id === batchIds[studyIndex]);
   const currentLearning = state.items.find((item) => item.id === learningQueue[queueIndex]);
   const currentReview = state.items.find((item) => item.id === reviewIds[reviewIndex]);
+  const currentRestudy = state.items.find((item) => item.id === restudyContext?.itemId);
+  const editingItem = state.items.find((item) => item.id === editingId);
+
+  if (!hydrated || access !== "ready") return (
+    <div className="app-shell">
+      <header className="topbar"><div className="brand"><span className="brand-mark">字</span><span className="brand-text">识字小花园<small>每天一点点，记得更牢</small></span></div></header>
+      <FamilyAccessGate access={access} message={sync.message} onLogin={login} onCreateFresh={createFresh} />
+      {accountId !== "default" && access !== "checking" && <div className="main-stage"><button className="btn btn-secondary" type="button" onClick={() => switchAccount("default")}>返回原有账户</button></div>}
+    </div>
+  );
 
   return (
     <div className="app-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-mark">字</span><span className="brand-text">识字小花园<small>每天一点点，记得更牢</small></span></div>
-        {view === "home" && <button className="btn btn-ghost btn-small" type="button" onClick={() => setView("parent")}>家长中心</button>}
+        <div className="topbar-actions">
+          <SyncStatus phase={sync.phase} message={sync.message} lastSavedAt={sync.lastSavedAt} onRetry={() => { void retry(); }} />
+          {view === "home" && <button className="btn btn-ghost btn-small" type="button" onClick={() => setView("parent")}>家长中心</button>}
+        </div>
+        <AccountMenu accountId={accountId} blocked={sync.pending || sync.phase === "saving"} canSwitch={view === "home"} onSelect={switchAccount} />
       </header>
 
       {view === "home" && <main className="main-stage">
-        <section className="hero"><p className="eyebrow">今天的识字时间</p><h1>今天想怎么学？</h1><p>先在词语里认识新字，再把字单独读出来。一次只做一件事。</p></section>
+        <section className="hero"><p className="eyebrow">今天的识字时间</p><h1>今天想怎么学？</h1><p>打开今天的汉字清单，会的轻点一下，不会的双击再学。</p></section>
         <section className="panel">
           <div className="mode-grid" aria-label="选择学习模式">
             <button className="mode-button" type="button" aria-pressed={mode === "parent"} onClick={() => setMode("parent")}><span className="mode-icon">👨‍👩‍👧</span><span className="mode-copy"><strong>家长陪学</strong><span>家长听孩子读，判断会不会</span></span></button>
-            <button className="mode-button" type="button" aria-pressed={mode === "child"} onClick={() => setMode("child")}><span className="mode-icon">🌱</span><span className="mode-copy"><strong>孩子自己学</strong><span>先读出来，再播放答案自查</span></span></button>
+            <button className="mode-button" type="button" aria-pressed={mode === "list"} onClick={() => setMode("list")}><span className="mode-icon">📋</span><span className="mode-copy"><strong>列表学习</strong><span>今日全部汉字，不会的最后一起复习</span></span></button>
           </div>
-          <div className="stats-grid"><div className="stat"><strong>{learningItems.length}</strong><span>待学习</span></div><div className="stat"><strong>{dueItems.length}</strong><span>今天复习</span></div><div className="stat"><strong>{masteredCount}</strong><span>已掌握</span></div></div>
-          <button className="btn btn-primary" style={{ width: "100%" }} type="button" onClick={() => begin(mode)}>开始学习</button>
+          <div className="stats-grid"><div className="stat"><strong>{learningItems.length}</strong><span>待学习</span></div><div className="stat"><strong>{getTodayItems(state).filter((item: LiteracyItem) => item.stage !== "LEARNING").length}</strong><span>今天复习</span></div><div className="stat"><strong>{masteredCount}</strong><span>已掌握</span></div></div>
+          <button className="btn btn-primary" style={{ width: "100%" }} type="button" onClick={() => begin(mode)}>{mode === "list" ? "开始列表学习" : "开始学习"}</button>
+          <button className="btn btn-secondary" style={{ width: "100%", marginTop: 12 }} type="button" onClick={() => setView("weekend")}>本周末复习清单（{getWeekendItems(state).length}）</button>
         </section>
       </main>}
 
@@ -213,15 +294,26 @@ export function LiteracyApp() {
         </section>
       </main>}
 
-      {view === "study" && currentStudy && <main className="main-stage"><div className="progress-track"><div className="progress-fill" style={{ width: `${((studyIndex + 1) / batchIds.length) * 100}%` }} /></div><WordStudyCard item={currentStudy} pinyin={getPinyin(currentStudy.char)} words={wordsFor(currentStudy)} position={studyIndex + 1} total={batchIds.length} onSpeak={speak} onNext={finishStudyCard} /></main>}
+      {view === "study" && currentStudy && <main className="main-stage"><div className="progress-track"><div className="progress-fill" style={{ width: `${((studyIndex + 1) / batchIds.length) * 100}%` }} /></div><WordStudyCard item={currentStudy} pinyin={getCharacterPinyin(currentStudy)} words={wordsFor(currentStudy)} position={studyIndex + 1} total={batchIds.length} speaking={isSpeaking} onSpeak={speak} onNext={finishStudyCard} onEdit={() => setEditingId(currentStudy.id)} /></main>}
 
-      {view === "recognition" && currentLearning && <main className="main-stage"><div className="progress-track"><div className="progress-fill" style={{ width: `${(queueIndex / Math.max(1, learningQueue.length)) * 100}%` }} /></div><RecognitionCard char={currentLearning.char} correctCount={currentLearning.learningCorrect} targetCount={sessionSettings.learningRepetitions} parentMode={mode === "parent"} disabled={Boolean(feedback)} onAnswer={answerLearning} />{feedback && <div className={`feedback ${feedback.correct ? "good" : "again"}`}><strong>{feedback.correct ? "读对了！" : "再看一次"}</strong>{feedback.correct ? "稍后还会再见到它。" : `${feedback.char} · ${getPinyin(feedback.char)} · ${wordsFor(currentLearning).join("、")}`}</div>}</main>}
+      {view === "recognition" && currentLearning && <main className="main-stage"><div className="progress-track"><div className="progress-fill" style={{ width: `${(queueIndex / Math.max(1, learningQueue.length)) * 100}%` }} /></div><RecognitionCard key={queueIndex} char={currentLearning.char} pinyin={getCharacterPinyin(currentLearning)} word={wordsFor(currentLearning)[0]} correctCount={currentLearning.learningCorrect} targetCount={sessionSettings.learningRepetitions} parentMode={mode === "parent"} disabled={isSpeaking} onAnswer={answerLearning} onEdit={() => setEditingId(currentLearning.id)} /></main>}
 
-      {view === "review" && currentReview && <main className="main-stage"><div className="section-head"><div><p className="eyebrow">到期复习 · {reviewIndex + 1}/{reviewIds.length}</p><h1>先读，再判断</h1></div>{undoState && <button className="btn btn-ghost btn-small" onClick={undo}>撤销上一步</button>}</div><RecognitionCard char={currentReview.char} correctCount={currentReview.stageStreak} targetCount={currentReview.stage === "MASTERED" ? 1 : state.settings[`${currentReview.stage === "DAILY" ? "daily" : currentReview.stage === "WEEKLY" ? "weekly" : "biweekly"}Goal`] ?? 3} parentMode={mode === "parent"} disabled={Boolean(feedback)} onAnswer={answerReview} />{feedback && <div className={`feedback ${feedback.correct ? "good" : "again"}`}><strong>{feedback.correct ? "答对了" : "先回去学一学"}</strong><div>{getPinyin(currentReview.char)} · {wordsFor(currentReview).join("、")}</div><button className="btn btn-secondary btn-small" style={{ marginTop: 12 }} onClick={() => speak(`${currentReview.char}，${wordsFor(currentReview).join("，")}`)}>🔊 播放答案</button></div>}</main>}
+      {view === "restudy" && currentRestudy && <main className="main-stage"><WordStudyCard item={currentRestudy} pinyin={getCharacterPinyin(currentRestudy)} words={wordsFor(currentRestudy)} position={1} total={1} autoSpeak={shouldAutoSpeak(view)} speaking={isSpeaking} onSpeak={speak} onNext={finishRestudyCard} onEdit={() => setEditingId(currentRestudy.id)} /></main>}
+
+      {view === "review" && currentReview && <main className="main-stage"><div className="section-head"><div><p className="eyebrow">到期复习 · {reviewIndex + 1}/{reviewIds.length}</p><h1>先读，再判断</h1></div>{undoState && <button className="btn btn-ghost btn-small" disabled={isSpeaking} onClick={undo}>撤销上一步</button>}</div><RecognitionCard key={reviewIndex} char={currentReview.char} pinyin={getCharacterPinyin(currentReview)} word={wordsFor(currentReview)[0]} correctCount={currentReview.stageStreak} targetCount={currentReview.stage === "MASTERED" ? 1 : state.settings[`${currentReview.stage === "DAILY" ? "daily" : currentReview.stage === "WEEKLY" ? "weekly" : "biweekly"}Goal`] ?? 3} parentMode={mode === "parent"} disabled={isSpeaking} onAnswer={answerReview} onEdit={() => setEditingId(currentReview.id)} /></main>}
 
       {view === "summary" && <main className="main-stage"><section className="panel empty-state"><div className="empty-icon">🌼</div><h2>{summary.title}</h2><p>{summary.detail}</p><div className="button-row two" style={{ marginTop: 24 }}><button className="btn btn-secondary" onClick={() => setView("home")}>回到首页</button><button className="btn btn-primary" onClick={() => begin(mode)}>继续下一轮</button></div></section></main>}
 
       {view === "parent" && <ParentPanel state={state} onChange={setState} onReset={resetAll} onClose={() => setView("home")} />}
+      {view === "daily-list" && <DailyStudyList state={state} onChange={setState} onClose={() => setView("home")} />}
+      {view === "weekend" && <WeekendReview state={state} onChange={setState} onClose={() => setView("home")} />}
+      {editingItem && <CharacterDialog title={`编辑汉字：${editingItem.char}`} onClose={() => setEditingId(null)}>
+        <CharacterEditor item={editingItem} words={getCharacterWords(editingItem, learnedSet)} onCancel={() => setEditingId(null)} onSave={(patch) => {
+          updateCharacter(state, editingItem.id, patch);
+          setState((previous) => updateCharacter(previous, editingItem.id, patch));
+          setEditingId(null);
+        }} />
+      </CharacterDialog>}
     </div>
   );
 }

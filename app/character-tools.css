@@ -1,0 +1,65 @@
+.character-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 20px 70px rgba(25, 38, 55, 0.28);
+}
+.character-dialog::backdrop { background: rgba(23, 35, 52, 0.5); }
+.character-dialog-heading {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+.character-dialog-heading h2 { margin: 0; font-size: 21px; }
+.character-dialog-content { padding: 20px; }
+.character-details { text-align: center; }
+.character-details .big-character { font-size: clamp(100px, 27vw, 180px); }
+.character-answer { margin-top: 22px; }
+.character-answer[hidden] { display: none; }
+.character-detail-actions { display: grid; gap: 10px; }
+.character-study-edit { margin-top: 18px; }
+.character-editor-intro, .character-editor .field small { color: var(--muted); line-height: 1.6; }
+.character-editor .field textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 13px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.6;
+}
+.character-editor textarea:focus-visible { outline: 4px solid rgba(53, 105, 168, 0.25); outline-offset: 2px; }
+.character-editor-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+.character-error { padding: 12px; border-radius: 12px; background: var(--coral-soft); color: var(--coral); line-height: 1.6; }
+.character-notice { color: var(--green); line-height: 1.6; }
+.character-notice:empty { display: none; }
+.status-card-with-actions { display: grid; gap: 12px; }
+.status-card-overview { display: flex; align-items: center; gap: 12px; }
+.status-character-button { border: 0; min-height: 48px; cursor: pointer; }
+.status-character-button:hover { background: #dbe9fa; }
+.status-card-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 6px; }
+.status-card-actions .btn { padding: 8px 5px; }
+.status-card-actions .status-card-delete { grid-column: 1 / -1; }
+.status-card-actions .btn[aria-pressed="true"] { background: var(--green-soft); color: var(--green); }
+
+@media (min-width: 560px) {
+  .character-detail-actions { grid-template-columns: 1fr 1fr; }
+  .character-detail-actions > :nth-child(n+3) { grid-column: 1 / -1; }
+  .character-dialog-content { padding: 24px; }
+}
