@@ -54,6 +54,8 @@ App 备份必须在当前网页无待上传进度且同步状态为 saved 时生
 
 2026-09-29 发布程序来源 `13f96fd071836795a69303dc8562a76afb4eb413`，活动目录 `/usr/local/code/kids-literacy-releases/20260929-ios-backup-13f96fd`，build ID `ViHFZXY0L76_RwlSnfD0v`。nginx 的 `/etc/nginx/conf.d/literacy-backup-log.conf` 定义脱敏格式，本站 access_log 使用该格式；原配置备份在 `/usr/local/code/kids-literacy-deploy-backups/20260929-ios-backup-13f96fd/z.allon.me.conf`。应用回滚只切回旧程序软链接并重启，不改学习数据库；脱敏日志可继续服务旧程序。
 
+本轮合成空间已做真实桌面浏览器生成、下载、复制、重发、撤销取消与确认；截图及下载文件保存在忽略目录 output，窄屏尚未验收。不要将生产匿名只读 HTTP 检查描述成已经对真实家庭生成过备份链接。
+
 原有账户的浏览器缓存键为 `kids-literacy:v1`，新增账户使用上述命名空间，SQLite 是权威永久存储。保留家庭码登录、原设备迁移保护、离线补传和各账户的版本冲突保护；不能用旧本地实现替换这些模块。家庭码只保留哈希，不能将明文写入文档、仓库或日志。
 
 发布前运行现有备份服务并确认新备份生成。数据库固定在 `/var/lib/kids-literacy/progress.sqlite`，备份位于 `/var/backups/kids-literacy/`；发布和回滚只切换 `/opt/kids-literacy-garden` 程序版本，不替换数据库或备份目录。恢复顺序及权限要求按 README 的“备份与恢复”执行。

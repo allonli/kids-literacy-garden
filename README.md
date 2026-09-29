@@ -142,7 +142,7 @@ $hash = $code | node scripts/hash-family-code.mjs
 
 正式环境只读检查：首页 200、未登录备份 API 401、无效下载链接 404；备份路径访问日志显示 `[redacted]`，保留方法、状态与耗时。部署前后全部学习账户的 revision、汉字数量和状态摘要逐项一致，没有生成真实学习资料备份链接。发布前数据库备份为 `progress-20260929-125546.sqlite`，旧程序 `/usr/local/code/kids-literacy-releases/20260916-delete-characters` 保留可回滚。
 
-本地真实浏览器已确认生成合成备份后的全部账户和字数。浏览器下载、复制、取消/撤销及窄屏的交互验收仍按 `tests/user-scenarios.md` 记录，不能用服务端路由测试替代这些 UI 验收。
+本地真实 Brave 浏览器已确认生成、系统保存 JSON、复制、重新生成使旧链接失效、撤销取消与确认；取消后链接仍为 200，确认撤销后为 404，原学习资料不变。下载文件为 version 1、两个合成档案、分别 2/1 字。窄屏仍待按 `tests/user-scenarios.md` 验收。
 
 ## 内容来源
 
