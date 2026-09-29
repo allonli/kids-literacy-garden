@@ -1,0 +1,148 @@
+{
+  "exportVersion": 1,
+  "accounts": [
+    {
+      "id": "default",
+      "name": "Test Cedar",
+      "revision": 3,
+      "state": {
+        "version": 1,
+        "settings": {
+          "batchSize": 2,
+          "learningRepetitions": 3,
+          "dailyGoal": 3,
+          "weeklyGoal": 3,
+          "biweeklyGoal": 3,
+          "masteredSample": 2
+        },
+        "importWarnings": [],
+        "items": [
+          {
+            "id": "test-bridge",
+            "char": "桥",
+            "pinyin": "qiáo",
+            "stage": "DAILY",
+            "stageStreak": 1,
+            "learningCorrect": 3,
+            "unfamiliar": false,
+            "lastCountedDate": "2026-09-29",
+            "nextDue": "2026-09-30",
+            "words": [
+              "木桥"
+            ],
+            "customWords": [],
+            "hiddenWords": [],
+            "editedWords": []
+          },
+          {
+            "id": "test-word",
+            "char": "词",
+            "pinyin": "cí",
+            "stage": "LEARNING",
+            "stageStreak": 0,
+            "learningCorrect": 1,
+            "unfamiliar": true,
+            "lastCountedDate": null,
+            "nextDue": null,
+            "words": [
+              "词语"
+            ],
+            "customWords": [],
+            "hiddenWords": []
+          }
+        ],
+        "history": [
+          {
+            "char": "桥",
+            "correct": true,
+            "kind": "list",
+            "at": "2026-09-29T10:00:00.333Z"
+          },
+          {
+            "char": "词",
+            "correct": false,
+            "kind": "review",
+            "at": "2026-09-28T20:00:00Z"
+          }
+        ],
+        "dailySession": {
+          "date": "2026-09-29",
+          "pendingIds": [],
+          "retryIds": [
+            "test-word"
+          ],
+          "completedIds": [
+            "test-bridge"
+          ]
+        },
+        "weekendReview": {
+          "weekStart": "2026-09-28",
+          "characterIds": [
+            "test-bridge",
+            "test-word"
+          ]
+        }
+      },
+      "characterContent": {
+        "test-bridge": {
+          "pinyin": "qiáo",
+          "words": []
+        },
+        "test-word": {
+          "pinyin": "cí",
+          "words": [
+            "词语",
+            "组词",
+            "生词"
+          ]
+        }
+      }
+    },
+    {
+      "id": "stable-second",
+      "name": "Test Maple",
+      "revision": 1,
+      "state": {
+        "version": 1,
+        "settings": {
+          "batchSize": 2,
+          "learningRepetitions": 3,
+          "dailyGoal": 3,
+          "weeklyGoal": 3,
+          "biweeklyGoal": 3,
+          "masteredSample": 2
+        },
+        "importWarnings": [],
+        "items": [
+          {
+            "id": "test-word",
+            "char": "词",
+            "pinyin": "cí",
+            "stage": "LEARNING",
+            "stageStreak": 0,
+            "learningCorrect": 0,
+            "unfamiliar": false,
+            "lastCountedDate": null,
+            "nextDue": null,
+            "words": [
+              "词语"
+            ],
+            "customWords": [],
+            "hiddenWords": []
+          }
+        ],
+        "history": []
+      },
+      "characterContent": {
+        "test-word": {
+          "pinyin": "cí",
+          "words": [
+            "词语",
+            "组词",
+            "生词"
+          ]
+        }
+      }
+    }
+  ]
+}

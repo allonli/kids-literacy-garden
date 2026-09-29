@@ -19,6 +19,7 @@
 - `lib/learning-engine.mjs`：学习阶段、到期时间、答题升级规则；列表答题复用阶段规则。
 - `components/usePermanentProgress.ts`、`lib/progress-client.mjs`、`lib/progress-sync.mjs`：浏览器即时保存、认证加载、上传、离线补传和版本冲突处理。
 - `lib/progress-state.mjs`、`lib/server/`、`app/api/`：进度校验、家庭码认证、SQLite 持久化及 API。
+- `components/BackupSettings.tsx`、`lib/server/ios-backup-*.mjs`、`app/api/ios-backups/`：家长中心可撤销的 24 小时 App 备份链接；只读事务导出当前家庭全部账户，正常学习数据库不增加表或改动成绩。
 - `tests/`：业务、同步、服务端和真实用户操作验证；`deploy/`：systemd 服务与备份配置。
 
 ## 本次功能约定
@@ -44,6 +45,10 @@
 - SQLite 只新增 `learning_accounts` 表，保留原 `progress` 与 `device_sessions` 表及数据；`default` 仍落在原表。旧设备 `/api/progress/migrate` 只允许迁移原有账户，新账户不存在时不能自动迁移或复制旧缓存。
 
 ## 发布与数据边界
+
+App 备份必须在当前网页无待上传进度且同步状态为 saved 时生成，不能偷偷导出过期服务器记录。服务端只从认证会话确定家庭，不接受客户端提供 familyId；创建/撤销校验同源。下载仅接受 64 位十六进制高熵 token，不以家庭码、账户昵称或可猜 ID 授权。快照存储在数据库旁的私有目录，权限 0700/0600，生产代理不得将该目录作为静态内容提供；访问日志与错误日志避免写入完整链接或学习内容。每家庭最新链接替换旧链接，重启后到期时间保持不变。
+
+转换器 `ios-backup-codec.mjs` 与原 iOS Python 转换器使用同一个 UUID v5 namespace 和规范内容散列。网站的 `editedWords: []` 必须保留，推荐内容按实际 `getCharacterPinyin/getCharacterWords` 计算；历史/队列/周末关联转为目标 item ID。普通 version 1 之外仅增加可选 source：kind、规范 origin、每个 profileID 对应不依赖昵称/顺序的 sourceID 和 revision。sourceID 不作为访问凭证。修改格式先更新合成 fixture 与跨实现测试，不自动读取生产数据作为测试素材。
 
 正式站点为 `https://z.allon.me`，运行 Node.js API 和 SQLite，不能改成 GitHub Pages 纯静态部署。当前 Node 服务监听 `127.0.0.1:17303`，nginx 提供 HTTPS。
 

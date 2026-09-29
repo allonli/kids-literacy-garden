@@ -5,6 +5,7 @@ import { CharacterStatusBoard } from "./CharacterStatusBoard";
 import { CharacterDialog } from "./CharacterDialog";
 import { CharacterDetails } from "./CharacterDetails";
 import { CharacterEditor, type CharacterEditPatch } from "./CharacterEditor";
+import { BackupSettings } from "./BackupSettings";
 import { addNewCharacters, updateSettings } from "@/lib/learning-engine.mjs";
 import { deleteCharacter, getCharacterPinyin, getCharacterWords, updateCharacter } from "@/lib/character-editing.mjs";
 import { getWeekendItems, toggleWeekendCharacter } from "@/lib/study-list.mjs";
@@ -15,6 +16,7 @@ type Props = {
   onChange: (state: LiteracyState) => void;
   onReset: () => void;
   onClose: () => void;
+  backupBlocked?: boolean;
 };
 
 const SETTING_ROWS = [
@@ -25,7 +27,7 @@ const SETTING_ROWS = [
   ["biweeklyGoal", "每两周升级次数", "每次到期答对", 1, 10],
 ] as const;
 
-export function ParentPanel({ state, onChange, onReset, onClose }: Props) {
+export function ParentPanel({ state, onChange, onReset, onClose, backupBlocked = true }: Props) {
   const [newCharacters, setNewCharacters] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<"details" | "edit">("details");
@@ -99,6 +101,7 @@ export function ParentPanel({ state, onChange, onReset, onClose }: Props) {
         <button className="btn btn-ghost btn-small back-button" type="button" onClick={onClose}>返回首页</button>
       </div>
       <div className="parent-layout">
+        <BackupSettings blocked={backupBlocked} />
         <section className="subpanel">
           <h2>学习设置</h2>
           <div className="settings-grid">

@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "id": "D3651192-D15A-583B-83A3-1922D01CBE3D",
+  "exportedAt": "2026-09-29T12:00:00Z",
+  "profiles": [
+    {
+      "id": "A16B9482-E75D-58C1-BBC7-D8A0BDFDCBAD",
+      "name": "Test Cedar",
+      "settings": {
+        "batchSize": 2,
+        "learningRepeats": 3,
+        "dailyTarget": 3,
+        "weeklyTarget": 3,
+        "twoWeeklyTarget": 3,
+        "masteredSample": 2
+      },
+      "items": [
+        {
+          "seed": {
+            "id": "CEF9E906-E56E-5C08-B747-4CC777E488EE",
+            "character": "桥",
+            "pinyin": "qiáo",
+            "words": [],
+            "wordsEdited": true
+          },
+          "progress": {
+            "stage": "DAILY",
+            "learningCorrect": 3,
+            "stageCorrect": 1,
+            "unfamiliar": false,
+            "nextReview": "2026-09-30",
+            "lastReviewDay": "2026-09-29"
+          }
+        },
+        {
+          "seed": {
+            "id": "02D9C12C-4F5C-51A9-A9BD-8CB45988D3B1",
+            "character": "词",
+            "pinyin": "cí",
+            "words": [
+              "词语",
+              "组词",
+              "生词"
+            ],
+            "wordsEdited": false
+          },
+          "progress": {
+            "stage": "LEARNING",
+            "learningCorrect": 1,
+            "stageCorrect": 0,
+            "unfamiliar": true,
+            "nextReview": null,
+            "lastReviewDay": null
+          }
+        }
+      ],
+      "history": [
+        {
+          "id": "095715F7-F9E0-502C-8102-F2F5C6022FFF",
+          "profileID": "A16B9482-E75D-58C1-BBC7-D8A0BDFDCBAD",
+          "itemID": "CEF9E906-E56E-5C08-B747-4CC777E488EE",
+          "correct": true,
+          "source": "today",
+          "day": "2026-09-29",
+          "timestamp": "2026-09-29T10:00:00Z"
+        },
+        {
+          "id": "BD24BE65-8AF9-52C2-B710-74019C9EB0B9",
+          "profileID": "A16B9482-E75D-58C1-BBC7-D8A0BDFDCBAD",
+          "itemID": "02D9C12C-4F5C-51A9-A9BD-8CB45988D3B1",
+          "correct": false,
+          "source": "guided",
+          "day": "2026-09-29",
+          "timestamp": "2026-09-28T20:00:00Z"
+        }
+      ],
+      "daily": {
+        "day": "2026-09-29",
+        "pending": [],
+        "later": [
+          "02D9C12C-4F5C-51A9-A9BD-8CB45988D3B1"
+        ],
+        "completed": [
+          "CEF9E906-E56E-5C08-B747-4CC777E488EE"
+        ]
+      },
+      "weekend": {
+        "week": "2026-09-28",
+        "itemIDs": [
+          "CEF9E906-E56E-5C08-B747-4CC777E488EE",
+          "02D9C12C-4F5C-51A9-A9BD-8CB45988D3B1"
+        ]
+      }
+    },
+    {
+      "id": "984D06FC-664B-5AB5-A409-CF78F90620BC",
+      "name": "Test Maple",
+      "settings": {
+        "batchSize": 2,
+        "learningRepeats": 3,
+        "dailyTarget": 3,
+        "weeklyTarget": 3,
+        "twoWeeklyTarget": 3,
+        "masteredSample": 2
+      },
+      "items": [
+        {
+          "seed": {
+            "id": "097A7502-75AA-5E69-B605-4F829BC0D2F7",
+            "character": "词",
+            "pinyin": "cí",
+            "words": [
+              "词语",
+              "组词",
+              "生词"
+            ],
+            "wordsEdited": false
+          },
+          "progress": {
+            "stage": "LEARNING",
+            "learningCorrect": 0,
+            "stageCorrect": 0,
+            "unfamiliar": false,
+            "nextReview": null,
+            "lastReviewDay": null
+          }
+        }
+      ],
+      "history": []
+    }
+  ]
+}

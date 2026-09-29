@@ -304,7 +304,7 @@ function LearningAccount({ accountId, onSelectAccount }: { accountId: string; on
 
       {view === "summary" && <main className="main-stage"><section className="panel empty-state"><div className="empty-icon">🌼</div><h2>{summary.title}</h2><p>{summary.detail}</p><div className="button-row two" style={{ marginTop: 24 }}><button className="btn btn-secondary" onClick={() => setView("home")}>回到首页</button><button className="btn btn-primary" onClick={() => begin(mode)}>继续下一轮</button></div></section></main>}
 
-      {view === "parent" && <ParentPanel state={state} onChange={setState} onReset={resetAll} onClose={() => setView("home")} />}
+      {view === "parent" && <ParentPanel state={state} onChange={setState} onReset={resetAll} onClose={() => setView("home")} backupBlocked={sync.pending || sync.phase !== "saved"} />}
       {view === "daily-list" && <DailyStudyList state={state} onChange={setState} onClose={() => setView("home")} />}
       {view === "weekend" && <WeekendReview state={state} onChange={setState} onClose={() => setView("home")} />}
       {editingItem && <CharacterDialog title={`编辑汉字：${editingItem.char}`} onClose={() => setEditingId(null)}>

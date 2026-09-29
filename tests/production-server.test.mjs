@@ -218,3 +218,29 @@ test("persists deleting the last character and its references in one account wit
   for (const field of ["pendingIds", "retryIds", "completedIds"]) assert.deepEqual(reloaded.state.dailySession[field], []);
   assert.deepEqual(await (await fetch(`${origin}/api/progress`, { headers })).json(), original);
 });
+
+test("generates, downloads and revokes App backups through the actual production routes", async () => {
+  assert.equal((await fetch(`${origin}/api/ios-backups`)).status, 401);
+  const login = await fetch(`${origin}/api/auth/login`, {
+    method: "POST", headers: { "content-type": "application/json", origin }, body: JSON.stringify({ code: "482731" }),
+  });
+  const cookie = login.headers.get("set-cookie").split(";", 1)[0];
+  const headers = { origin, cookie };
+  const before = await (await fetch(`${origin}/api/progress`, { headers })).json();
+  const created = await fetch(`${origin}/api/ios-backups`, { method: "POST", headers });
+  assert.equal(created.status, 201);
+  const metadata = await created.json();
+  assert.equal(metadata.profiles.length, 3);
+  const file = await fetch(`${origin}${metadata.path}`);
+  assert.equal(file.status, 200, "the unguessable temporary link can be used by the native App without browser cookies");
+  assert.match(file.headers.get("content-disposition"), /^attachment;/);
+  const document = await file.json();
+  assert.equal(document.version, 1);
+  assert.deepEqual(document.profiles[0].items[0].seed.words, []);
+  assert.equal(document.source.origin, "https://z.allon.me");
+  assert.equal(document.profiles.at(-1).items.length, 0, "an intentionally empty library remains empty in the backup");
+  const revoked = await fetch(`${origin}/api/ios-backups`, { method: "DELETE", headers });
+  assert.equal(revoked.status, 200);
+  assert.equal((await fetch(`${origin}${metadata.path}`)).status, 404);
+  assert.deepEqual(await (await fetch(`${origin}/api/progress`, { headers })).json(), before);
+});

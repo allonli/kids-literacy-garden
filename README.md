@@ -108,6 +108,20 @@ $hash = $code | node scripts/hash-family-code.mjs
 
 ## 备份与恢复
 
+### 给 iPhone / iPad App 的备份
+
+家长中心展开“备份配置”，等待当前进度显示“已永久保存”，再点“生成备份”。备份包含当前家庭全部已保存账户的字库、有效拼音组词（包括主动清空）、设置、成绩、历史、今日队列和周末清单。可“下载 JSON 备份”，也可“复制 App 导入链接”，交给 App 的文件/在线导入入口。网站学习进度不会因此改变。
+
+链接是生成时快照，有效 24 小时，持有完整链接的人可读取其中学习资料。不要公开发布链接。重新生成会使旧链接失效，也可主动“撤销备份链接”；已经下载的文件不受撤销影响。关闭页面后不再次展示完整链接，需要时重新生成。复制被浏览器拒绝时，可以选中可见链接手动复制；登录过期请重新登录。离线或当前还有待上传修改时不能生成，恢复同步后重试。
+
+格式兼容识字小花园 iOS `BackupCodec` version 1，稳定内容 ID 与原 iOS `scripts/convert_website.py` 一致。额外 `source` 元数据包含固定站点来源、稳定账户身份和服务器版本号，供支持来源识别的 App 使用；旧版 App 忽略额外字段。它不包含家庭码、Cookie、会话 token、服务器密钥或设备标识。普通备份默认作为新档案导入，具体更新策略由 App 的确认预览决定。
+
+服务使用现有家庭会话与同源验证生成/撤销链接，每家庭与来源地址每 10 分钟最多生成 6 次。256 位随机链接原文只交给生成者，服务器仅以 token 摘要定位快照。私有目录默认是 `LITERACY_DB_PATH` 所在目录下的 `ios-backups/`，可通过 `LITERACY_IOS_BACKUP_DIR` 指定；目录权限 0700、文件 0600，不能放入网站 public 或由 nginx 静态公开。每家庭只有当前一份链接，过期后拒绝读取，重新生成、撤销或检查过期状态时清理旧快照。重启程序保留尚未到期的链接。
+
+部署不新增学习数据库表、不改成绩或 schema；现有 systemd 的 `/var/lib/kids-literacy` 可写范围已覆盖默认目录。备份下载响应禁止缓存并使用 `no-referrer`。反向代理与监控不应记录完整能力链接；新增路由的访问日志可保留方法、状态、耗时，并隐去 URL 中的 token。脱敏示例见 `deploy/nginx-backup-log.conf`，应替换原始站点 access_log，不能同时保留另一份含完整 URL 的日志；独立错误日志/APM 也需核对。
+
+新增测试为 `tests/ios-backup.test.mjs`，已接入 `npm run test:unit`。`tests/fixtures/website-backup-source.json` 和 `ios-backup-v1.json` 仅有合成昵称和 2/1 个汉字，后者由 iOS Python 转换器生成，Node 导出逐字段对比；可用于 App 的公开兼容性验收，不能替换真实资料。
+
 - 数据库固定在 `/var/lib/kids-literacy/progress.sqlite`，发布和回滚不能替换该目录。
 - `kids-literacy-backup.timer` 每日运行一致性备份，文件保存在 `/var/backups/kids-literacy/`，保留 30 天。
 - 发布前手动运行 `systemctl start kids-literacy-backup.service`，确认出现新的 `progress-YYYYMMDD-HHmmss.sqlite`。
