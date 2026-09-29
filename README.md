@@ -136,6 +136,14 @@ $hash = $code | node scripts/hash-family-code.mjs
 
 发布前已生成 `progress-20260905-022326.sqlite` 备份，切换前后正式数据 revision 602、655 个汉字及数据摘要一致。服务状态正常，HTTPS 返回 200。旧程序保留在 `/opt/kids-literacy-releases/20260902-b0fd61f`；程序回滚继续遵守上面的数据库保护规则。
 
+## 2026-09-29 App 备份发布记录
+
+“备份配置”已于北京时间 21:00 发布到 `https://z.allon.me`，程序来源 `13f96fd071836795a69303dc8562a76afb4eb413`，发布目录 `/usr/local/code/kids-literacy-releases/20260929-ios-backup-13f96fd`，Next.js build ID 为 `ViHFZXY0L76_RwlSnfD0v`。服务器 Node.js 22.22.2 下 130 项单测、9 项生产路由/HTML 测试、ESLint 和生产构建全部通过。
+
+正式环境只读检查：首页 200、未登录备份 API 401、无效下载链接 404；备份路径访问日志显示 `[redacted]`，保留方法、状态与耗时。部署前后全部学习账户的 revision、汉字数量和状态摘要逐项一致，没有生成真实学习资料备份链接。发布前数据库备份为 `progress-20260929-125546.sqlite`，旧程序 `/usr/local/code/kids-literacy-releases/20260916-delete-characters` 保留可回滚。
+
+本地真实浏览器已确认生成合成备份后的全部账户和字数。浏览器下载、复制、取消/撤销及窄屏的交互验收仍按 `tests/user-scenarios.md` 记录，不能用服务端路由测试替代这些 UI 验收。
+
 ## 内容来源
 
 组词与拼音使用 `cnchar` 和 `cnchar-words`，并通过儿童友好覆盖表修正常见、缺失或容易歧义的词语。家长在网站内的修改优先于自动推荐。
